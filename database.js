@@ -2,6 +2,24 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
+// Check if we're in production (Render) without PostgreSQL
+if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+  console.warn('\n⚠️  WARNING: Running in production without PostgreSQL!');
+  console.warn('⚠️  Your data will be DELETED on every deployment/restart!');
+  console.warn('⚠️  To fix this, set up PostgreSQL on Render:');
+  console.warn('⚠️  1. Create PostgreSQL database on Render');
+  console.warn('⚠️  2. Add DATABASE_URL environment variable');
+  console.warn('⚠️  3. See POSTGRES_SETUP.md for details\n');
+}
+
+// For now, we'll use SQLite (local development) or warn in production
+// TODO: Implement PostgreSQL adapter when DATABASE_URL is set
+if (process.env.DATABASE_URL) {
+  console.log('📊 PostgreSQL DATABASE_URL detected - but PostgreSQL adapter not yet implemented');
+  console.log('📊 Using SQLite for now. Data will persist locally but reset on Render deployments.');
+  console.log('📊 Full PostgreSQL support coming soon. See POSTGRES_SETUP.md');
+}
+
 // Ensure data directory exists
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {

@@ -66,8 +66,19 @@ https://erp-app.onrender.com
 ## Important Notes
 
 - **Free tier**: Spins down after 15min inactivity (wakes in ~30s)
-- **Database**: SQLite data resets on restart/deploy. For persistent data, use Render PostgreSQL (free tier available)
+- **Database**: ⚠️ **CRITICAL** - SQLite data resets on every deploy/restart! 
+  - **You MUST set up PostgreSQL for data persistence** (see POSTGRES_SETUP.md)
+  - Without PostgreSQL, all your sales/products data will be lost on each deployment
 - **Auto-deploy**: Every git push to main branch automatically redeploys
+
+## ⚠️ Data Persistence Setup Required
+
+**Before using the app in production, you MUST set up PostgreSQL:**
+
+1. See `POSTGRES_SETUP.md` for detailed instructions
+2. Create a PostgreSQL database on Render (free tier available)
+3. Add `DATABASE_URL` environment variable to your web service
+4. Your data will then persist across deployments
 
 ## Troubleshooting
 
