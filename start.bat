@@ -53,11 +53,23 @@ echo.
 REM Start the server
 node server.js
 
-REM If server exits, pause so user can see any error messages
-if %ERRORLEVEL% NEQ 0 (
+REM Check exit code - only show error for actual errors, not Ctrl+C
+REM Exit codes: 0 = success, 1/130 = Ctrl+C (normal), others = actual errors
+set EXIT_CODE=%ERRORLEVEL%
+if %EXIT_CODE% NEQ 0 (
+    if %EXIT_CODE% EQU 1 (
+        REM Exit code 1 is common for Ctrl+C, treat as normal shutdown
+        exit /b 0
+    )
+    if %EXIT_CODE% EQU 130 (
+        REM Exit code 130 is also Ctrl+C (SIGINT), treat as normal shutdown
+        exit /b 0
+    )
+    REM Other exit codes indicate actual errors
     echo.
-    echo [ERROR] Server stopped with an error.
+    echo [ERROR] Server stopped with an error (Exit code: %EXIT_CODE%).
     echo.
     pause
+    exit /b %EXIT_CODE%
 )
 
