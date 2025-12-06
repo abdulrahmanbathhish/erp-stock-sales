@@ -20,10 +20,15 @@
 
 ### 2. Push to GitHub
 
-Run these commands (replace YOUR_USERNAME and REPO_NAME):
+**Option A: Use the helper script (Mac/Linux):**
 
 ```bash
-cd "/Users/abdulrahmanbathhish/Documents/erp abdulrahman for sh all v 0.2.4"
+./push-to-github.sh https://github.com/YOUR_USERNAME/REPO_NAME.git
+```
+
+**Option B: Manual commands:**
+
+```bash
 git remote add origin https://github.com/YOUR_USERNAME/REPO_NAME.git
 git push -u origin main
 ```
