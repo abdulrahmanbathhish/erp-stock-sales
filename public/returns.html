@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-en="Customer Returns - Stock & Sales" data-ar="إرجاع العملاء - المخزون والمبيعات">إرجاع العملاء - المخزون والمبيعات</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/sales-cards.css">
+</head>
+<body>
+    <div class="container" style="padding-top: var(--space-4); padding-bottom: 100px;">
+        <!-- Page Header -->
+        <div class="page-section-header">
+            <div>
+                <h2 style="margin-bottom: var(--space-2); font-weight: 700; display: flex; align-items: center; gap: var(--space-3);" data-en="Register Customer Return" data-ar="تسجيل إرجاع عميل">
+                    <i class="bi bi-arrow-return-left" style="color: var(--color-gray-600);"></i>تسجيل إرجاع عميل
+                </h2>
+                <p class="text-muted" style="margin-bottom: 0;" data-en="Process product returns and restore stock" data-ar="معالجة إرجاع المنتجات واستعادة المخزون">معالجة إرجاع المنتجات واستعادة المخزون</p>
+            </div>
+        </div>
+        
+        <!-- Customer Search -->
+        <div class="card mb-5">
+            <div class="card-header">
+                <h5 class="mb-0" data-en="Search Customer" data-ar="البحث عن عميل">
+                    <i class="bi bi-search me-2" style="color: var(--color-primary-600);"></i>البحث عن عميل
+                </h5>
+            </div>
+            <div class="card-body">
+                <label for="customer-search-input" class="form-label" data-en="Search Customer:" data-ar="البحث عن عميل:">البحث عن عميل:</label>
+                <div class="position-relative">
+                    <input type="text" 
+                           class="form-control form-control-lg" 
+                           id="customer-search-input" 
+                           placeholder="اكتب اسم العميل أو الهاتف..."
+                           data-en="Type customer name or phone..." 
+                           data-ar="اكتب اسم العميل أو الهاتف..."
+                           autocomplete="off">
+                    <div id="customer-search-results" class="list-group"></div>
+                </div>
+                <input type="hidden" id="selected-customer-id">
+            </div>
+        </div>
+
+        <!-- Sales Selection -->
+        <div class="card mb-5" id="sales-section" style="display: none;">
+            <div class="card-header" style="background: var(--color-info-light); border-bottom: 1px solid var(--color-info);">
+                <h5 class="mb-0" style="color: var(--color-info-dark);" data-en="Select Sale to Return" data-ar="اختر المبيعة المراد إرجاعها">
+                    <i class="bi bi-list-check me-2"></i>اختر المبيعة المراد إرجاعها
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="sales-cards-container" class="sales-cards-container">
+                    <div class="text-center text-muted" data-en="Loading..." data-ar="جاري التحميل...">جاري التحميل...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Return Form Modal -->
+        <div class="modal fade" id="returnModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: var(--color-gray-100); border-bottom: 1px solid var(--color-gray-300);">
+                        <h5 class="modal-title" style="color: var(--color-gray-700);" data-en="Register Return" data-ar="تسجيل الإرجاع">
+                            <i class="bi bi-arrow-return-left me-2"></i>تسجيل الإرجاع
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="return-form">
+                            <input type="hidden" id="return-sale-id">
+                            <input type="hidden" id="return-product-id">
+                            <input type="hidden" id="return-customer-id">
+                            
+                            <div class="form-group">
+                                <label class="form-label" data-en="Product:" data-ar="المنتج:">المنتج:</label>
+                                <p class="form-control-plaintext fw-bold" id="return-product-name"></p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" data-en="Original Quantity:" data-ar="الكمية الأصلية:">الكمية الأصلية:</label>
+                                <p class="form-control-plaintext" id="return-original-quantity"></p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" data-en="Already Returned:" data-ar="تم إرجاعه:">تم إرجاعه:</label>
+                                <p class="form-control-plaintext" id="return-already-returned"></p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="return-quantity" class="form-label" data-en="Return Quantity *" data-ar="كمية الإرجاع *">كمية الإرجاع *</label>
+                                <input type="number" class="form-control" id="return-quantity" min="1" required>
+                                <small class="text-muted" id="return-quantity-help"></small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="return-date" class="form-label" data-en="Return Date *" data-ar="تاريخ الإرجاع *">تاريخ الإرجاع *</label>
+                                <input type="date" class="form-control" id="return-date" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="return-reason" class="form-label" data-en="Reason (Optional)" data-ar="السبب (اختياري)">السبب (اختياري)</label>
+                                <textarea class="form-control" id="return-reason" rows="3"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-en="Cancel" data-ar="إلغاء">إلغاء</button>
+                        <button type="button" class="btn btn-primary" onclick="submitReturn()" data-en="Register Return" data-ar="تسجيل الإرجاع">تسجيل الإرجاع</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <div id="alert-container"></div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <a href="home.html" class="bottom-nav__item" data-en="Home" data-ar="الرئيسية">
+            <i class="bi bi-house bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Home" data-ar="الرئيسية">الرئيسية</span>
+        </a>
+        <a href="history.html" class="bottom-nav__item" data-en="History" data-ar="السجل">
+            <i class="bi bi-file-text bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="History" data-ar="السجل">السجل</span>
+        </a>
+        <a href="products.html" class="bottom-nav__item" data-en="Products" data-ar="المنتجات">
+            <i class="bi bi-box bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Products" data-ar="المنتجات">المنتجات</span>
+        </a>
+        <a href="customers.html" class="bottom-nav__item" data-en="Customers" data-ar="العملاء">
+            <i class="bi bi-people bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Customers" data-ar="العملاء">العملاء</span>
+        </a>
+        <a href="index.html" class="bottom-nav__item" data-en="Dashboard" data-ar="لوحة التحكم">
+            <i class="bi bi-speedometer2 bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Dashboard" data-ar="لوحة التحكم">لوحة التحكم</span>
+        </a>
+        <a href="expenses.html" class="bottom-nav__item" data-en="Expenses" data-ar="المصروفات">
+            <i class="bi bi-wallet bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Expenses" data-ar="المصروفات">المصروفات</span>
+        </a>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/language.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/returns.js"></script>
+</body>
+</html>
+

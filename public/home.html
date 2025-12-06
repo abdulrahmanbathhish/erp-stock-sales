@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="html-root">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-en="Home - Quick Actions" data-ar="الرئيسية - عمليات سريعة">الرئيسية - عمليات سريعة</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Unified Header -->
+    <header class="app-header">
+        <div class="container">
+            <div class="app-header__content">
+                <h1 class="app-header__title" data-en="Stock & Sales Management" data-ar="إدارة المخزون والمبيعات">إدارة
+                    المخزون والمبيعات</h1>
+                <div class="app-header__actions" style="display: flex; gap: var(--space-2); align-items: center;">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="navigateToDashboard()" data-en="Dashboard" data-ar="لوحة التحكم">
+                        <i class="bi bi-speedometer2 me-1"></i>
+                        <span data-en="Dashboard" data-ar="لوحة التحكم">لوحة التحكم</span>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="toggleLanguage()" id="lang-toggle">
+                        <i class="bi bi-translate me-1"></i>
+                        <span data-en="English" data-ar="English">English</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content - Centered Action Buttons -->
+    <div class="container"
+        style="min-height: calc(100vh - 120px); display: flex; align-items: center; justify-content: center; padding: var(--space-6) var(--space-4);">
+        <div style="width: 100%; max-width: 800px;">
+            <!-- Page Title -->
+            <h1 class="text-center"
+                style="font-size: 2rem; font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-6);"
+                data-en="Quick Actions" data-ar="عمليات سريعة">عمليات سريعة</h1>
+
+            <!-- Action Buttons Grid -->
+            <div class="action-buttons-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
+                <!-- Cash Sale (بيع نقدي) - PRIMARY -->
+                <button class="action-button action-button--primary" onclick="navigateTo('sales-excel.html')"
+                    style="min-height: 120px;">
+                    <i class="bi bi-cart" style="font-size: 2.5rem; margin-bottom: var(--space-3);"></i>
+                    <span data-en="Cash Sale" data-ar="بيع نقدي" style="font-size: 1.125rem; font-weight: 600;">بيع
+                        نقدي</span>
+                </button>
+
+                <!-- Credit Sale (بيع بالدين) -->
+                <button class="action-button" onclick="navigateTo('credit.html')" style="min-height: 120px;">
+                    <i class="bi bi-credit-card" style="font-size: 2.5rem; margin-bottom: var(--space-3);"></i>
+                    <span data-en="Credit Sale" data-ar="بيع بالدين" style="font-size: 1.125rem; font-weight: 600;">بيع
+                        بالدين</span>
+                </button>
+
+                <!-- Return (مرتجع) -->
+                <button class="action-button" onclick="navigateTo('returns.html')" style="min-height: 120px;">
+                    <i class="bi bi-arrow-return-left" style="font-size: 2.5rem; margin-bottom: var(--space-3);"></i>
+                    <span data-en="Return" data-ar="مرتجع" style="font-size: 1.125rem; font-weight: 600;">مرتجع</span>
+                </button>
+
+                <!-- Expense (مصروف) -->
+                <button class="action-button" onclick="navigateTo('expenses.html')" style="min-height: 120px;">
+                    <i class="bi bi-wallet2" style="font-size: 2.5rem; margin-bottom: var(--space-3);"></i>
+                    <span data-en="Expense" data-ar="مصروف" style="font-size: 1.125rem; font-weight: 600;">مصروف</span>
+                </button>
+
+                <!-- Customer Search (بحث عن زبون) -->
+                <button class="action-button" onclick="navigateTo('customers.html')" style="min-height: 120px;">
+                    <i class="bi bi-search" style="font-size: 2.5rem; margin-bottom: var(--space-3);"></i>
+                    <span data-en="Customer Search" data-ar="بحث عن زبون"
+                        style="font-size: 1.125rem; font-weight: 600;">بحث عن زبون</span>
+                </button>
+
+                <!-- Add Payment (إضافة دفعة) -->
+                <button class="action-button" data-bs-toggle="modal" data-bs-target="#addPaymentModal" style="min-height: 120px;">
+                    <i class="bi bi-wallet2" style="font-size: 2.5rem; margin-bottom: var(--space-3);"></i>
+                    <span data-en="Add Payment" data-ar="إضافة دفعة"
+                        style="font-size: 1.125rem; font-weight: 600;">إضافة دفعة</span>
+                </button>
+
+            </div>
+
+            <!-- Recent Operations -->
+            <div style="margin-top: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); flex-wrap: wrap; gap: var(--space-3);">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0;" data-en="Recent Operations" data-ar="العمليات الأخيرة">العمليات الأخيرة</h2>
+                    
+                    <!-- Day Filters -->
+                    <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                        <button class="time-filter-btn btn btn-sm" 
+                                data-time="today" 
+                                onclick="setTimeFilterForOperations('today')"
+                                style="border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-weight: 500; transition: var(--transition); cursor: pointer;"
+                                onmouseover="if(!this.classList.contains('active')) this.style.background='var(--color-bg)'"
+                                onmouseout="if(!this.classList.contains('active')) { this.style.background='var(--color-surface)'; this.style.color='var(--color-text-primary)'; this.style.borderColor='var(--color-border)'; }"
+                                data-en="Today" 
+                                data-ar="اليوم">اليوم</button>
+                        <button class="time-filter-btn btn btn-sm" 
+                                data-time="week" 
+                                onclick="setTimeFilterForOperations('week')"
+                                style="border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-weight: 500; transition: var(--transition); cursor: pointer;"
+                                onmouseover="if(!this.classList.contains('active')) this.style.background='var(--color-bg)'"
+                                onmouseout="if(!this.classList.contains('active')) { this.style.background='var(--color-surface)'; this.style.color='var(--color-text-primary)'; this.style.borderColor='var(--color-border)'; }"
+                                data-en="Week" 
+                                data-ar="الأسبوع">الأسبوع</button>
+                        <button class="time-filter-btn btn btn-sm" 
+                                data-time="month" 
+                                onclick="setTimeFilterForOperations('month')"
+                                style="border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-weight: 500; transition: var(--transition); cursor: pointer;"
+                                onmouseover="if(!this.classList.contains('active')) this.style.background='var(--color-bg)'"
+                                onmouseout="if(!this.classList.contains('active')) { this.style.background='var(--color-surface)'; this.style.color='var(--color-text-primary)'; this.style.borderColor='var(--color-border)'; }"
+                                data-en="Month" 
+                                data-ar="الشهر">الشهر</button>
+                        <button class="time-filter-btn btn btn-sm active" 
+                                data-time="all" 
+                                onclick="setTimeFilterForOperations('all')"
+                                style="border: 1px solid var(--color-primary); background: var(--color-primary); color: white; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-weight: 500; transition: var(--transition); cursor: pointer;"
+                                data-en="All" 
+                                data-ar="الكل">الكل</button>
+                    </div>
+                    
+                    <!-- Customer Filter -->
+                    <div style="position: relative; flex: 1; min-width: 200px; max-width: 300px;">
+                        <div style="position: relative;">
+                            <input type="text" 
+                                   id="customer-filter-input" 
+                                   class="form-control form-control-sm" 
+                                   placeholder="بحث عن عميل..." 
+                                   data-en="Search customer..." 
+                                   data-ar="بحث عن عميل..."
+                                   style="padding-right: 35px;">
+                            <button id="customer-filter-clear" 
+                                    class="btn btn-sm btn-link" 
+                                    onclick="clearCustomerFilterForOperations()" 
+                                    style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); padding: 0; display: none; color: var(--color-text-secondary);"
+                                    title="Clear filter">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </div>
+                        <div id="customer-filter-results" 
+                             class="list-group" 
+                             style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; max-height: 200px; overflow-y: auto; display: none; margin-top: 2px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: var(--radius-md);">
+                        </div>
+                    </div>
+                </div>
+                <div id="recent-operations">
+                    <div class="loading-state">
+                        <i class="bi bi-hourglass-split"></i>
+                        <p data-en="Loading operations..." data-ar="جاري تحميل العمليات...">جاري تحميل العمليات...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Payment Modal -->
+    <div class="modal fade" id="addPaymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" data-en="Add Payment" data-ar="إضافة دفعة">إضافة دفعة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-payment-form" onsubmit="event.preventDefault(); savePaymentFromHome();">
+                        <div class="mb-3" style="position: relative;">
+                            <label for="payment-customer" class="form-label" data-en="Customer *" data-ar="العميل *">العميل *</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="payment-customer-search" 
+                                   placeholder="Search customer..." 
+                                   data-en="Search customer..." 
+                                   data-ar="بحث عن عميل..."
+                                   autocomplete="off">
+                            <input type="hidden" id="payment-customer-id" required>
+                            <div id="payment-customer-results" 
+                                 class="list-group" 
+                                 style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; max-height: 200px; overflow-y: auto; display: none; margin-top: 2px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: var(--radius-md);">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="payment-amount" class="form-label" data-en="Amount *" data-ar="المبلغ *">المبلغ *</label>
+                            <input type="number" class="form-control" id="payment-amount" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="payment-date" class="form-label" data-en="Payment Date *" data-ar="تاريخ الدفعة *">تاريخ الدفعة *</label>
+                            <input type="date" class="form-control" id="payment-date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="payment-notes" class="form-label" data-en="Notes (Optional)" data-ar="ملاحظات (اختياري)">ملاحظات (اختياري)</label>
+                            <textarea class="form-control" id="payment-notes" rows="3"></textarea>
+                        </div>
+                        <div id="payment-error" class="alert alert-danger" style="display: none;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-en="Cancel" data-ar="إلغاء">إلغاء</button>
+                    <button type="button" class="btn btn-primary" onclick="savePaymentFromHome()" data-en="Save Payment" data-ar="حفظ الدفعة">حفظ الدفعة</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/language.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/home.js"></script>
+</body>
+
+</html>

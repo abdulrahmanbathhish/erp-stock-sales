@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-en="Expenses - Stock & Sales" data-ar="المصروفات - المخزون والمبيعات">المصروفات - المخزون والمبيعات</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/sales-cards.css">
+    <style>
+        .expenses-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .expenses-table th,
+        .expenses-table td {
+            border: 1px solid var(--color-border-light);
+            padding: var(--space-3);
+            text-align: right;
+        }
+        .expenses-table th {
+            background: var(--color-gray-50);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .expenses-table input,
+        .expenses-table select {
+            width: 100%;
+            border: 1px solid transparent;
+            padding: var(--space-2);
+            background: transparent;
+            font-family: inherit;
+        }
+        .expenses-table input:focus,
+        .expenses-table select:focus {
+            outline: none;
+            border-color: var(--color-primary-500);
+            background: var(--color-white);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+        }
+        .row-number {
+            width: 50px;
+            text-align: center;
+            background: var(--color-gray-50);
+        }
+        .actions-cell {
+            width: 80px;
+        }
+        .invalid-row {
+            background: var(--color-warning-light);
+        }
+        .nav-tabs .nav-link {
+            transition: all var(--transition-base);
+        }
+        .nav-tabs .nav-link:hover {
+            border-color: var(--color-border-light);
+        }
+        .nav-tabs .nav-link.active {
+            border-color: var(--color-primary-600);
+            color: var(--color-primary-600);
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="padding-top: var(--space-4); padding-bottom: 100px;">
+        <!-- Tabs for Add Expenses vs View History -->
+        <ul class="nav nav-tabs mb-5" id="expensesTabs" role="tablist" style="border-bottom: 2px solid var(--border-light);">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="add-tab" data-bs-toggle="tab" data-bs-target="#add-expenses" type="button" role="tab" style="border: none; border-bottom: 2px solid var(--primary-600); color: var(--primary-600); font-weight: 500;" data-en="Add Expenses" data-ar="إضافة المصروفات">إضافة المصروفات</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#view-history" type="button" role="tab" style="border: none; color: var(--text-secondary); font-weight: 500;" data-en="View History" data-ar="عرض السجل">عرض السجل</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="expensesTabContent">
+            <!-- Add Expenses Tab -->
+            <div class="tab-pane fade show active" id="add-expenses" role="tabpanel">
+                <!-- Page Title -->
+                <h1 class="page-title" data-en="Expenses" data-ar="المصروفات">المصروفات</h1>
+
+                <!-- Success/Error Messages -->
+                <div id="alert-container"></div>
+
+                <!-- Expenses Cards -->
+                <div id="expenses-cards-container" class="sales-cards-container mb-4">
+                    <!-- Expense cards will be added here -->
+                </div>
+
+                <!-- Summary Cards (Clean Business Style) -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4 col-sm-6">
+                        <div class="kpi-card">
+                            <div class="kpi-card__header">
+                                <h6 class="kpi-card__title" data-en="Total Rows" data-ar="إجمالي الصفوف">إجمالي الصفوف</h6>
+                            </div>
+                            <div class="kpi-card__value" id="total-rows">0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-sm-6">
+                        <div class="kpi-card">
+                            <div class="kpi-card__header">
+                                <h6 class="kpi-card__title" data-en="Valid Rows" data-ar="الصفوف الصحيحة">الصفوف الصحيحة</h6>
+                            </div>
+                            <div class="kpi-card__value" id="valid-rows">0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-sm-6">
+                        <div class="kpi-card">
+                            <div class="kpi-card__header">
+                                <h6 class="kpi-card__title" data-en="Total Amount" data-ar="إجمالي المبلغ">إجمالي المبلغ</h6>
+                            </div>
+                            <div class="kpi-card__value" id="total-amount-preview" style="color: var(--color-error);">$0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons (Side by Side) -->
+                <div class="d-flex gap-3 mb-4" style="flex-wrap: wrap;">
+                    <button class="btn-secondary-nav flex-fill" onclick="addNewRow()" data-en="Add Row" data-ar="إضافة صف">
+                        <i class="bi bi-plus-circle"></i>
+                        <span data-en="Add Row" data-ar="إضافة صف">إضافة صف</span>
+                    </button>
+                    <button class="btn-primary-nav flex-fill" onclick="submitAllExpenses()" data-en="Submit All Expenses" data-ar="تأكيد جميع المصروفات">
+                        <i class="bi bi-check-circle"></i>
+                        <span data-en="Submit All Expenses" data-ar="تأكيد جميع المصروفات">تأكيد جميع المصروفات</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- View History Tab -->
+            <div class="tab-pane fade" id="view-history" role="tabpanel">
+                <div class="page-section-header">
+                    <div>
+                        <h2 style="margin-bottom: var(--space-2); font-weight: 700; display: flex; align-items: center; gap: var(--space-3);" data-en="Expense History" data-ar="سجل المصروفات">
+                            <i class="bi bi-clock-history" style="color: var(--color-error);"></i>سجل المصروفات
+                        </h2>
+                        <p class="text-muted" style="margin-bottom: 0;" data-en="View and filter expense records" data-ar="عرض وتصفية سجلات المصروفات">عرض وتصفية سجلات المصروفات</p>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="card mb-5">
+                    <div class="card-header" style="background: var(--color-primary-50); border-bottom: 1px solid var(--color-primary-200);">
+                        <h5 class="mb-0" style="color: var(--color-primary-700);" data-en="Filters" data-ar="الفلاتر">
+                            <i class="bi bi-funnel me-2"></i>الفلاتر
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 col-12 mb-3 mb-md-0">
+                                <label for="category-filter" class="form-label" data-en="Category:" data-ar="الفئة:">الفئة:</label>
+                                <select id="category-filter" class="form-select">
+                                    <option value="" data-en="All Categories" data-ar="جميع الفئات">جميع الفئات</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 col-12 mb-3 mb-md-0">
+                                <label for="start-date-filter" class="form-label" data-en="Start Date:" data-ar="تاريخ البداية:">تاريخ البداية:</label>
+                                <input type="date" id="start-date-filter" class="form-control">
+                            </div>
+                            <div class="col-md-4 col-12">
+                                <label for="end-date-filter" class="form-label" data-en="End Date:" data-ar="تاريخ النهاية:">تاريخ النهاية:</label>
+                                <input type="date" id="end-date-filter" class="form-control">
+                            </div>
+                        </div>
+                        <div class="mt-4 d-flex flex-column flex-md-row gap-3">
+                            <button class="btn btn-primary flex-fill" onclick="applyFilters()" data-en="Apply Filters" data-ar="تطبيق الفلاتر">تطبيق الفلاتر</button>
+                            <button class="btn btn-outline-secondary flex-fill" onclick="clearFilters()" data-en="Clear" data-ar="مسح">مسح</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expenses History Table -->
+                <div class="card">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3);">
+                        <h5 class="mb-0" data-en="Expense Log" data-ar="سجل المصروفات">
+                            <i class="bi bi-list-ul me-2"></i>سجل المصروفات
+                        </h5>
+                        <div>
+                            <strong style="color: var(--color-error);" data-en="Total:" data-ar="الإجمالي:">الإجمالي: <span id="expenses-total" class="fw-bold">$0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th data-en="Date" data-ar="التاريخ">التاريخ</th>
+                                        <th data-en="Amount" data-ar="المبلغ">المبلغ</th>
+                                        <th data-en="Description" data-ar="الوصف">الوصف</th>
+                                        <th data-en="Category" data-ar="الفئة">الفئة</th>
+                                        <th data-en="Actions" data-ar="الإجراءات">الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expenses-history-table">
+                                    <tr>
+                                        <td colspan="5" class="text-center" data-en="Loading..." data-ar="جاري التحميل...">جاري التحميل...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/language.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/expenses.js"></script>
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <a href="home.html" class="bottom-nav__item" data-en="Home" data-ar="الرئيسية">
+            <i class="bi bi-house bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Home" data-ar="الرئيسية">الرئيسية</span>
+        </a>
+        <a href="history.html" class="bottom-nav__item" data-en="History" data-ar="السجل">
+            <i class="bi bi-file-text bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="History" data-ar="السجل">السجل</span>
+        </a>
+        <a href="products.html" class="bottom-nav__item" data-en="Products" data-ar="المنتجات">
+            <i class="bi bi-box bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Products" data-ar="المنتجات">المنتجات</span>
+        </a>
+        <a href="customers.html" class="bottom-nav__item" data-en="Customers" data-ar="العملاء">
+            <i class="bi bi-people bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Customers" data-ar="العملاء">العملاء</span>
+        </a>
+        <a href="index.html" class="bottom-nav__item" data-en="Dashboard" data-ar="لوحة التحكم">
+            <i class="bi bi-speedometer2 bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Dashboard" data-ar="لوحة التحكم">لوحة التحكم</span>
+        </a>
+        <a href="expenses.html" class="bottom-nav__item active" data-en="Expenses" data-ar="المصروفات">
+            <i class="bi bi-wallet bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Expenses" data-ar="المصروفات">المصروفات</span>
+        </a>
+    </nav>
+
+    <script>
+        // Update navigation visibility on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof updateNavigationVisibility === 'function') {
+                updateNavigationVisibility();
+            }
+        });
+    </script>
+</body>
+</html>

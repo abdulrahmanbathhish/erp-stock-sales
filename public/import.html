@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-en="Import Products - Stock & Sales" data-ar="استيراد المنتجات - المخزون والمبيعات">استيراد المنتجات - المخزون والمبيعات</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container" style="padding-top: var(--space-4); padding-bottom: 100px;">
+        <!-- Page Header -->
+        <div class="page-section-header">
+            <div>
+                <h2 style="margin-bottom: var(--space-2); font-weight: 700; display: flex; align-items: center; gap: var(--space-3);" data-en="Import Products from Excel" data-ar="استيراد المنتجات من Excel">
+                    <i class="bi bi-file-earmark-excel" style="color: var(--color-success);"></i>استيراد المنتجات من Excel
+                </h2>
+                <p class="text-muted" style="margin-bottom: 0;" data-en="Bulk import products from Excel files" data-ar="استيراد جماعي للمنتجات من ملفات Excel">استيراد جماعي للمنتجات من ملفات Excel</p>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card mb-5" id="upload-section">
+            <div class="card-header" style="background: var(--color-success-light); border-bottom: 1px solid var(--color-success);">
+                <h5 class="mb-0" style="color: var(--color-success-dark);" data-en="Step 1: Upload Excel File" data-ar="الخطوة 1: رفع ملف Excel">
+                    <i class="bi bi-cloud-upload me-2"></i>الخطوة 1: رفع ملف Excel
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted" data-en="Upload an Excel file (.xlsx or .xls) containing your products." data-ar="قم برفع ملف Excel (.xlsx أو .xls) يحتوي على منتجاتك.">Upload an Excel file (.xlsx or .xls) containing your products.</p>
+                <form id="upload-form">
+                    <div class="mb-3">
+                        <input type="file" 
+                               class="form-control" 
+                               id="excel-file" 
+                               accept=".xlsx,.xls" 
+                               required>
+                        <small class="form-text text-muted" data-en="Supported formats: .xlsx, .xls" data-ar="الصيغ المدعومة: .xlsx, .xls">Supported formats: .xlsx, .xls</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary" data-en="Upload File" data-ar="رفع الملف">Upload File</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Mapping Section -->
+        <div class="card mb-5" id="mapping-section" style="display: none;">
+            <div class="card-header" style="background: var(--color-info-light); border-bottom: 1px solid var(--color-info);">
+                <h5 class="mb-0" style="color: var(--color-info-dark);" data-en="Step 2: Map Columns" data-ar="الخطوة 2: تعيين الأعمدة">
+                    <i class="bi bi-diagram-3 me-2"></i>الخطوة 2: تعيين الأعمدة
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted" data-en="Select which column in your Excel file corresponds to each field." data-ar="حدد العمود في ملف Excel الذي يتوافق مع كل حقل.">Select which column in your Excel file corresponds to each field.</p>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="map-name" class="form-label" data-en="Product Name" data-ar="اسم المنتج">Product Name <span class="text-danger">*</span></label>
+                        <select class="form-select" id="map-name" required>
+                            <option value="" data-en="Select column..." data-ar="اختر العمود...">Select column...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="map-purchase-price" class="form-label" data-en="Purchase Price" data-ar="سعر الشراء">Purchase Price <span class="text-danger">*</span></label>
+                        <select class="form-select" id="map-purchase-price" required>
+                            <option value="" data-en="Select column..." data-ar="اختر العمود...">Select column...</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="map-sale-price" class="form-label" data-en="Sale Price (Optional)" data-ar="سعر البيع (اختياري)">Sale Price (Optional)</label>
+                        <select class="form-select" id="map-sale-price">
+                            <option value="" data-en="Select column (optional)..." data-ar="اختر العمود (اختياري)...">Select column (optional)...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="map-quantity" class="form-label" data-en="Stock Quantity" data-ar="كمية المخزون">Stock Quantity <span class="text-danger">*</span></label>
+                        <select class="form-select" id="map-quantity" required>
+                            <option value="" data-en="Select column..." data-ar="اختر العمود...">Select column...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <h6 data-en="Excel Data Preview:" data-ar="معاينة بيانات Excel:">Excel Data Preview:</h6>
+                    <p class="text-muted small" data-en="Review the data below and select which columns contain the product information." data-ar="راجع البيانات أدناه وحدد الأعمدة التي تحتوي على معلومات المنتج.">Review the data below and select which columns contain the product information.</p>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-bordered table-striped" id="preview-table">
+                            <thead class="table-light" style="position: sticky; top: 0; z-index: 10;"></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-success btn-lg" id="confirm-import" data-en="Confirm Import" data-ar="تأكيد الاستيراد">Confirm Import</button>
+                <button type="button" class="btn btn-secondary btn-lg ms-2" onclick="resetImport()" data-en="Start Over" data-ar="بدء من جديد">Start Over</button>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <div id="alert-container"></div>
+
+        <!-- Import Results -->
+        <div class="card mt-4" id="results-section" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0" data-en="Import Results" data-ar="نتائج الاستيراد">Import Results</h5>
+            </div>
+            <div class="card-body" id="results-content"></div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <a href="home.html" class="bottom-nav__item" data-en="Home" data-ar="الرئيسية">
+            <i class="bi bi-house bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Home" data-ar="الرئيسية">الرئيسية</span>
+        </a>
+        <a href="history.html" class="bottom-nav__item" data-en="History" data-ar="السجل">
+            <i class="bi bi-file-text bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="History" data-ar="السجل">السجل</span>
+        </a>
+        <a href="products.html" class="bottom-nav__item" data-en="Products" data-ar="المنتجات">
+            <i class="bi bi-box bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Products" data-ar="المنتجات">المنتجات</span>
+        </a>
+        <a href="customers.html" class="bottom-nav__item" data-en="Customers" data-ar="العملاء">
+            <i class="bi bi-people bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Customers" data-ar="العملاء">العملاء</span>
+        </a>
+        <a href="index.html" class="bottom-nav__item" data-en="Dashboard" data-ar="لوحة التحكم">
+            <i class="bi bi-speedometer2 bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Dashboard" data-ar="لوحة التحكم">لوحة التحكم</span>
+        </a>
+        <a href="expenses.html" class="bottom-nav__item" data-en="Expenses" data-ar="المصروفات">
+            <i class="bi bi-wallet bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Expenses" data-ar="المصروفات">المصروفات</span>
+        </a>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/language.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/import.js"></script>
+    <script>
+        // Update navigation visibility on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof updateNavigationVisibility === 'function') {
+                updateNavigationVisibility();
+            }
+        });
+    </script>
+</body>
+</html>
+

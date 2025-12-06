@@ -1,0 +1,56 @@
+================================================================================
+  QUICK START GUIDE - ERP STOCK & SALES SYSTEM
+================================================================================
+
+FIRST TIME SETUP (Do this once):
+================================================================================
+
+1. Double-click: SETUP.bat
+   - This will install everything automatically
+   - Wait 2-5 minutes for installation
+   - Server will start automatically when done
+
+2. (Optional) Create Desktop Shortcut:
+   - Double-click: CREATE_SHORTCUT.bat
+   - This creates a shortcut on your desktop for easy access
+
+
+STARTING THE SERVER (Every time you want to use the system):
+================================================================================
+
+Option 1: Double-click START_SERVER.bat
+
+Option 2: Use the desktop shortcut (if you created one)
+
+A window will open - KEEP IT OPEN while using the system.
+
+
+ACCESSING THE SYSTEM:
+================================================================================
+
+On this Windows computer:
+  → Open browser and go to: http://localhost:3000
+
+On other devices (phones, tablets, other computers):
+  → Look at the server window - it shows an IP address like: http://192.168.1.100:3000
+  → Make sure the device is on the SAME Wi-Fi network
+  → Open browser on that device and enter the IP address shown
+
+
+IMPORTANT NOTES:
+================================================================================
+
+✓ Keep the server window open while using the system
+✓ When Windows Firewall asks, click "Allow access"
+✓ All devices must be on the same Wi-Fi network
+✓ No internet required after setup (works completely offline)
+
+
+NEED HELP?
+================================================================================
+
+See README_WINDOWS.txt for detailed instructions and troubleshooting.
+
+
+================================================================================
+

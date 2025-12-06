@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-en="Customer Details - Stock & Sales" data-ar="تفاصيل العميل - المخزون والمبيعات">Customer Details - Stock & Sales</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Unified Header -->
+    <div class="container" style="padding-top: var(--space-4); padding-bottom: 100px;">
+        <div class="mb-3">
+            <a href="customers.html" class="btn btn-secondary" data-en="← Back to Customers" data-ar="← العودة إلى العملاء">← Back to Customers</a>
+        </div>
+
+        <!-- Customer Info Card -->
+        <div class="card mb-4" id="customer-info-card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0" data-en="Customer Information" data-ar="معلومات العميل">Customer Information</h5>
+                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addPaymentModal" data-en="Add Payment" data-ar="إضافة دفعة">Add Payment</button>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h4><strong data-en="Name:" data-ar="الاسم:">Name:</strong> <span id="customer-name"></span></h4>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <p><strong data-en="Total Sales Amount:" data-ar="إجمالي مبلغ المبيعات:">Total Sales Amount:</strong> <span id="total-sales-amount" class="text-info"></span></p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong data-en="Credit Sales:" data-ar="مبيعات بالدين:">Credit Sales:</strong> <span id="total-credit-sales" class="text-warning"></span></p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong data-en="Total Payments:" data-ar="إجمالي الدفعات:">Total Payments:</strong> <span id="total-payments" class="text-success"></span></p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong data-en="Remaining Debt:" data-ar="الدين المتبقي:">Remaining Debt:</strong> <span id="remaining-debt" class="text-danger" style="font-size: 1.2em; font-weight: bold;"></span></p>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <p><strong data-en="Notes:" data-ar="ملاحظات:">Notes:</strong></p>
+                        <p id="customer-notes" class="text-muted"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments History -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0" data-en="Payments History" data-ar="سجل الدفعات">Payments History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th data-en="Date" data-ar="التاريخ">Date</th>
+                                <th data-en="Amount" data-ar="المبلغ">Amount</th>
+                                <th data-en="Notes" data-ar="ملاحظات">Notes</th>
+                                <th data-en="Actions" data-ar="الإجراءات">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payments-table">
+                            <tr>
+                                <td colspan="4" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-success">
+                                <th colspan="1" data-en="Total Payments:" data-ar="إجمالي الدفعات:">Total Payments:</th>
+                                <th id="payments-total">$0.00</th>
+                                <th colspan="2"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales History -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0" data-en="Sales History" data-ar="سجل المبيعات">Sales History</h5>
+                <div>
+                    <input type="date" id="start-date" class="form-control form-control-sm d-inline-block" style="width: auto;">
+                    <span class="mx-2" data-en="to" data-ar="إلى">to</span>
+                    <input type="date" id="end-date" class="form-control form-control-sm d-inline-block" style="width: auto;">
+                    <button class="btn btn-sm btn-primary ms-2" onclick="filterSales()" data-en="Filter" data-ar="تصفية">Filter</button>
+                    <button class="btn btn-sm btn-secondary ms-2" onclick="clearFilter()" data-en="Clear" data-ar="مسح">Clear</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th data-en="Date" data-ar="التاريخ">Date</th>
+                                <th data-en="Product" data-ar="المنتج">Product</th>
+                                <th data-en="Quantity" data-ar="الكمية">Quantity</th>
+                                <th data-en="Sale Price" data-ar="سعر البيع">Sale Price</th>
+                                <th data-en="Total" data-ar="الإجمالي">Total</th>
+                                <th data-en="Credit" data-ar="دين">Credit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-table">
+                            <tr>
+                                <td colspan="6" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-info">
+                                <th colspan="3" data-en="Totals:" data-ar="الإجماليات:">Totals:</th>
+                                <th id="total-revenue">$0.00</th>
+                                <th id="grand-total">$0.00</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Payment Modal -->
+    <div class="modal fade" id="addPaymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" data-en="Add Payment" data-ar="إضافة دفعة">Add Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-payment-form" onsubmit="event.preventDefault(); savePayment();">
+                        <div class="mb-3">
+                            <label for="payment-amount" class="form-label" data-en="Amount *" data-ar="المبلغ *">Amount *</label>
+                            <input type="number" class="form-control" id="payment-amount" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="payment-date" class="form-label" data-en="Payment Date *" data-ar="تاريخ الدفعة *">Payment Date *</label>
+                            <input type="date" class="form-control" id="payment-date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="payment-notes" class="form-label" data-en="Notes (Optional)" data-ar="ملاحظات (اختياري)">Notes (Optional)</label>
+                            <textarea class="form-control" id="payment-notes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-en="Cancel" data-ar="إلغاء">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="savePayment()" data-en="Save Payment" data-ar="حفظ الدفعة">Save Payment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="alert-container" class="container mt-3"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/language.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/customer-details.js"></script>
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <a href="home.html" class="bottom-nav__item" data-en="Home" data-ar="الرئيسية">
+            <i class="bi bi-house bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Home" data-ar="الرئيسية">الرئيسية</span>
+        </a>
+        <a href="history.html" class="bottom-nav__item" data-en="History" data-ar="السجل">
+            <i class="bi bi-file-text bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="History" data-ar="السجل">السجل</span>
+        </a>
+        <a href="products.html" class="bottom-nav__item" data-en="Products" data-ar="المنتجات">
+            <i class="bi bi-box bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Products" data-ar="المنتجات">المنتجات</span>
+        </a>
+        <a href="customers.html" class="bottom-nav__item active" data-en="Customers" data-ar="العملاء">
+            <i class="bi bi-people bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Customers" data-ar="العملاء">العملاء</span>
+        </a>
+        <a href="index.html" class="bottom-nav__item" data-en="Dashboard" data-ar="لوحة التحكم">
+            <i class="bi bi-speedometer2 bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Dashboard" data-ar="لوحة التحكم">لوحة التحكم</span>
+        </a>
+        <a href="expenses.html" class="bottom-nav__item" data-en="Expenses" data-ar="المصروفات">
+            <i class="bi bi-wallet bottom-nav__icon"></i>
+            <span class="bottom-nav__label" data-en="Expenses" data-ar="المصروفات">المصروفات</span>
+        </a>
+    </nav>
+
+    <script>
+        // Update navigation visibility on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof updateNavigationVisibility === 'function') {
+                updateNavigationVisibility();
+            }
+        });
+    </script>
+</body>
+</html>
+
