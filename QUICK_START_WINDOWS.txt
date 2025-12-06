@@ -1,0 +1,61 @@
+==========================================
+QUICK START - Windows LAN Server
+==========================================
+
+1. INSTALL NODE.JS
+   - Download: https://nodejs.org/
+   - Install with default settings
+   - Restart computer
+
+2. COPY PROJECT FOLDER
+   - Copy entire folder to Windows laptop
+   - Keep folder structure intact
+
+3. START SERVER
+   - Double-click: start.bat
+   - Wait for "Server ready!" message
+   - Note the IP address shown (e.g., 192.168.1.10)
+
+4. ACCESS ON LAPTOP
+   - Open browser: http://localhost:3000
+
+5. ACCESS ON OTHER DEVICES
+   - Make sure device is on same Wi-Fi
+   - Open browser: http://YOUR_IP:3000
+   - Example: http://192.168.1.10:3000
+
+6. WINDOWS FIREWALL
+   - Click "Allow access" when prompted
+   - Check "Private networks"
+
+==========================================
+GET YOUR IP ADDRESS
+==========================================
+
+Method 1: Command Prompt
+  - Press Win+R, type: cmd
+  - Type: ipconfig
+  - Look for "IPv4 Address" (e.g., 192.168.1.10)
+
+Method 2: Server Console
+  - Look at server output after starting
+  - Find: "NETWORK ACCESS (Wi-Fi Clients)"
+  - Use the IP shown there
+
+==========================================
+KEEP SERVER RUNNING (PM2)
+==========================================
+
+Install PM2:
+  npm install -g pm2
+  npm install -g pm2-windows-startup
+
+Start with PM2:
+  pm2 start server.js --name erp-server
+  pm2 save
+  pm2 startup
+
+Server will auto-start on Windows boot!
+
+==========================================
+
