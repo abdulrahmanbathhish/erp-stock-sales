@@ -1,4 +1,6 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
 const os = require('os');
@@ -13,8 +15,18 @@ const returnsRouter = require('./routes/returns');
 const exportRouter = require('./routes/export');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: true,
+    credentials: true
+  }
+});
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0'; // Listen on all network interfaces for LAN access
+
+// Make io available to routes
+app.set('io', io);
 
 // Middleware
 // Configure CORS to allow all origins (for LAN access)
@@ -87,8 +99,17 @@ app.use('/api/export', exportRouter);
 // Serve static files from public directory (after routes to avoid index.html auto-serving)
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log(`✅ Client connected: ${socket.id}`);
+  
+  socket.on('disconnect', () => {
+    console.log(`❌ Client disconnected: ${socket.id}`);
+  });
+});
+
 // Start server
-app.listen(PORT, HOST, () => {
+server.listen(PORT, HOST, () => {
   const localIPs = getLocalIPs();
   const isWindows = os.platform() === 'win32';
   const primaryIP = localIPs.length > 0 ? localIPs[0] : null;

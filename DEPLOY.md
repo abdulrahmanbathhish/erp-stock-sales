@@ -16,20 +16,24 @@
 2. Repository name: `erp-stock-sales` (or your choice)
 3. **Don't** initialize with README, .gitignore, or license
 4. Click "Create repository"
-5. Copy the repository URL (e.g., `https://github.com/YOUR_USERNAME/erp-stock-sales.git`)
+5. Copy the **full** repository URL (e.g., `https://github.com/abdulrahmanbathhish/erp-stock-sales.git`)
+
+**Important:** The URL must include the repository name at the end!
 
 ### 2. Push to GitHub
 
 **Option A: Use the helper script (Mac/Linux):**
 
 ```bash
-./push-to-github.sh https://github.com/YOUR_USERNAME/REPO_NAME.git
+./push-to-github.sh https://github.com/abdulrahmanbathhish/YOUR_REPO_NAME.git
 ```
+
+Replace `YOUR_REPO_NAME` with your actual repository name (e.g., `erp-stock-sales`)
 
 **Option B: Manual commands:**
 
 ```bash
-git remote add origin https://github.com/YOUR_USERNAME/REPO_NAME.git
+git remote add origin https://github.com/abdulrahmanbathhish/YOUR_REPO_NAME.git
 git push -u origin main
 ```
 
@@ -38,7 +42,7 @@ git push -u origin main
 1. Go to https://render.com and sign up/login
 2. Click "New" → "Web Service"
 3. Connect your GitHub account (if not already connected)
-4. Select your repository: `erp-stock-sales`
+4. Select your repository (the one you just created)
 5. Configure:
    - **Name**: `erp-app`
    - **Environment**: `Node`
@@ -70,4 +74,4 @@ https://erp-app.onrender.com
 - If deployment fails, check the logs in Render dashboard
 - Make sure all environment variables are set correctly
 - First deployment takes longer (5-10 minutes)
-
+- **GitHub URL must include the repository name!** Example: `https://github.com/abdulrahmanbathhish/erp-stock-sales.git`

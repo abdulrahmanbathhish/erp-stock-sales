@@ -559,8 +559,49 @@ async function loadLatestSales() {
   }
 }
 
+// Initialize Socket.io for real-time updates
+let socket = null;
+
+function initSocket() {
+  // Connect to Socket.io server
+  socket = io();
+  
+  // Listen for new sale events
+  socket.on('sale:created', (data) => {
+    console.log('New sale received:', data);
+    // Reload latest sales to show the new sale
+    loadLatestSales();
+    // Show a subtle notification
+    showAlert('New sale recorded!', 'info');
+  });
+  
+  // Listen for multiple sales created
+  socket.on('sales:multiple-created', (data) => {
+    console.log('Multiple sales received:', data);
+    loadLatestSales();
+    showAlert('Sales recorded!', 'info');
+  });
+  
+  // Listen for sale deletion
+  socket.on('sale:deleted', (data) => {
+    console.log('Sale deleted:', data);
+    loadLatestSales();
+  });
+  
+  // Handle connection events
+  socket.on('connect', () => {
+    console.log('✅ Connected to real-time server');
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('❌ Disconnected from real-time server');
+  });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize Socket.io
+  initSocket();
   // Product search with debounce and autocomplete
   const searchInput = document.getElementById('product-search');
   searchInput.addEventListener('input', (e) => {

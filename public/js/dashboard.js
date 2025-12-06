@@ -425,7 +425,46 @@ window.showResetModal = showResetModal;
 window.confirmReset = confirmReset;
 window.exportTodayData = exportTodayData;
 
+// Initialize Socket.io for real-time updates
+let socket = null;
+
+function initSocket() {
+  // Connect to Socket.io server
+  socket = io();
+  
+  // Listen for new sale events
+  socket.on('sale:created', (data) => {
+    console.log('New sale received:', data);
+    // Reload dashboard data to show updated stats
+    loadDashboardData();
+  });
+  
+  // Listen for multiple sales created
+  socket.on('sales:multiple-created', (data) => {
+    console.log('Multiple sales received:', data);
+    loadDashboardData();
+  });
+  
+  // Listen for sale deletion
+  socket.on('sale:deleted', (data) => {
+    console.log('Sale deleted:', data);
+    loadDashboardData();
+  });
+  
+  // Handle connection events
+  socket.on('connect', () => {
+    console.log('✅ Connected to real-time server');
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('❌ Disconnected from real-time server');
+  });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize Socket.io
+  initSocket();
+  // Load initial dashboard data
   loadDashboardData();
 });

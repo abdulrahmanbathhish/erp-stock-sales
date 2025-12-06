@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 
+// Helper to get io instance
+function getIO(req) {
+  return req.app.get('io');
+}
+
 // Create a new sale
 router.post('/', (req, res) => {
   try {
@@ -32,6 +37,18 @@ router.post('/', (req, res) => {
       customer_id: customer_id ? parseInt(customer_id) : null,
       is_credit: is_credit === true || is_credit === 'true' || is_credit === 1
     });
+
+    // Get the full sale details for real-time update
+    const saleDetails = db.getSaleById(result.id);
+    
+    // Emit real-time event to all connected clients
+    const io = getIO(req);
+    if (io) {
+      io.emit('sale:created', {
+        sale: saleDetails,
+        stats: db.getSalesStats('today')
+      });
+    }
 
     res.json({
       success: true,
@@ -310,6 +327,17 @@ router.post('/multiple', (req, res) => {
 
     const totalProfit = results.reduce((sum, r) => sum + r.profit, 0);
 
+    // Emit real-time event for multiple sales
+    const io = getIO(req);
+    if (io) {
+      // Get latest sales to send to clients
+      const latestSales = db.getLatestSales(10);
+      io.emit('sales:multiple-created', {
+        sales: latestSales,
+        stats: db.getSalesStats('today')
+      });
+    }
+
     res.json({
       success: true,
       sales_created: results.length,
@@ -334,6 +362,15 @@ router.delete('/:id', (req, res) => {
       entity_name: sale.product_name,
       details: `Sale deleted: ${sale.quantity} units at $${sale.sale_price} each`
     });
+
+    // Emit real-time event for sale deletion
+    const io = getIO(req);
+    if (io) {
+      io.emit('sale:deleted', {
+        sale_id: saleId,
+        stats: db.getSalesStats('today')
+      });
+    }
 
     res.json({
       success: true,
