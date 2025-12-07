@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 
+// Helper to get io instance
+function getIO(req) {
+  return req.app.get('io');
+}
+
 // Create a new return
 router.post('/', (req, res) => {
   try {
@@ -26,6 +31,12 @@ router.post('/', (req, res) => {
     };
 
     const result = db.createReturn(returnData);
+
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('return:created', { return: result });
+    }
 
     res.json({
       success: true,
@@ -87,6 +98,12 @@ router.delete('/:id', (req, res) => {
   try {
     const returnId = parseInt(req.params.id);
     const returnRecord = db.deleteReturn(returnId);
+
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('return:deleted', { return_id: returnId });
+    }
 
     res.json({
       success: true,

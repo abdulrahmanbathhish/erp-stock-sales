@@ -297,8 +297,48 @@ function showAlert(message, type) {
   }, 5000);
 }
 
+// Initialize Socket.io for real-time updates
+let socket = null;
+
+function initSocket() {
+  // Connect to Socket.io server
+  socket = io();
+  
+  // Listen for return created
+  socket.on('return:created', (data) => {
+    console.log('New return created:', data);
+    // Reload customer sales if a customer is selected
+    const selectedCustomerId = document.getElementById('selected-customer-id');
+    if (selectedCustomerId && selectedCustomerId.value) {
+      loadCustomerSales(parseInt(selectedCustomerId.value));
+    }
+  });
+  
+  // Listen for return deleted
+  socket.on('return:deleted', (data) => {
+    console.log('Return deleted:', data);
+    // Reload customer sales if a customer is selected
+    const selectedCustomerId = document.getElementById('selected-customer-id');
+    if (selectedCustomerId && selectedCustomerId.value) {
+      loadCustomerSales(parseInt(selectedCustomerId.value));
+    }
+  });
+  
+  // Handle connection events
+  socket.on('connect', () => {
+    console.log('✅ Connected to real-time server');
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('❌ Disconnected from real-time server');
+  });
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize socket connection
+  initSocket();
+  
   // Set today's date as default for return date
   const today = new Date().toISOString().split('T')[0];
   // This will be set when modal opens

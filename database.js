@@ -126,11 +126,12 @@ db.exec(`
 
 // Create customer_id index after migration (if column exists)
 
-// Migrate existing sales table to add customer_id and is_credit columns if they don't exist
+// Migrate existing sales table to add customer_id, is_credit, and transaction_id columns if they don't exist
 try {
   const tableInfo = db.pragma('table_info(sales)');
   const hasCustomerId = tableInfo.some(col => col.name === 'customer_id');
   const hasIsCredit = tableInfo.some(col => col.name === 'is_credit');
+  const hasTransactionId = tableInfo.some(col => col.name === 'transaction_id');
   
   if (!hasCustomerId) {
     db.exec(`ALTER TABLE sales ADD COLUMN customer_id INTEGER;`);
@@ -138,9 +139,22 @@ try {
   if (!hasIsCredit) {
     db.exec(`ALTER TABLE sales ADD COLUMN is_credit INTEGER DEFAULT 0;`);
   }
+  if (!hasTransactionId) {
+    db.exec(`ALTER TABLE sales ADD COLUMN transaction_id TEXT;`);
+    // Generate transaction_id for existing sales based on created_at and customer_id
+    // Group sales that were created at the same time (within 1 second) with the same customer
+    db.exec(`
+      UPDATE sales 
+      SET transaction_id = customer_id || '_' || strftime('%Y%m%d%H%M%S', created_at)
+      WHERE transaction_id IS NULL;
+    `);
+  }
   // Create indexes after ensuring columns exist
   if (hasCustomerId || !hasCustomerId) {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_sales_customer_id ON sales(customer_id);`);
+  }
+  if (hasTransactionId || !hasTransactionId) {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sales_transaction_id ON sales(transaction_id);`);
   }
   if (hasIsCredit || !hasIsCredit) {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_sales_is_credit ON sales(is_credit);`);
@@ -170,6 +184,19 @@ const productQueries = {
   getAll: db.prepare('SELECT * FROM products ORDER BY name'),
   getById: db.prepare('SELECT * FROM products WHERE id = ?'),
   search: db.prepare('SELECT * FROM products WHERE name LIKE ? ORDER BY name LIMIT 20'),
+  searchMultiWord: (words) => {
+    // Build dynamic query for multi-word search
+    const conditions = words.map(() => 'name LIKE ?').join(' AND ');
+    const query = `SELECT * FROM products WHERE ${conditions} ORDER BY name LIMIT 20`;
+    const stmt = db.prepare(query);
+    const patterns = words.map(word => `%${word}%`);
+    return stmt.all(...patterns);
+  },
+  getHighestSalePrice: db.prepare(`
+    SELECT MAX(sale_price) as sale_price 
+    FROM sales 
+    WHERE product_id = ?
+  `),
   getLowStock: db.prepare('SELECT * FROM products WHERE stock_quantity < ? ORDER BY stock_quantity, name'),
   create: db.prepare(`
     INSERT INTO products (name, purchase_price, sale_price, stock_quantity, is_imported)
@@ -251,8 +278,8 @@ const salesQueries = {
 
     // Create sale record
     const insertSale = db.prepare(`
-      INSERT INTO sales (product_id, customer_id, quantity, purchase_price, sale_price, profit, is_credit)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO sales (product_id, customer_id, quantity, purchase_price, sale_price, profit, is_credit, transaction_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = insertSale.run(
       sale.product_id,
@@ -261,7 +288,8 @@ const salesQueries = {
       product.purchase_price,
       sale.sale_price,
       profit,
-      sale.is_credit ? 1 : 0
+      sale.is_credit ? 1 : 0,
+      sale.transaction_id || null
     );
 
     // Update stock
@@ -390,6 +418,19 @@ const salesQueries = {
     WHERE s.customer_id = ?
     ORDER BY s.created_at DESC
   `),
+  getByTransactionIds: (transactionIds) => {
+    if (!transactionIds || transactionIds.length === 0) return [];
+    const placeholders = transactionIds.map(() => '?').join(',');
+    return db.prepare(`
+      SELECT s.*, p.name as product_name, (s.purchase_price * s.quantity) as sold_value,
+             c.name as customer_name, c.phone as customer_phone
+      FROM sales s
+      JOIN products p ON s.product_id = p.id
+      LEFT JOIN customers c ON s.customer_id = c.id
+      WHERE s.transaction_id IN (${placeholders})
+      ORDER BY s.created_at DESC
+    `).all(...transactionIds);
+  },
   getSalesByDateRange: db.prepare(`
     SELECT 
       COALESCE(SUM(profit), 0) as total_profit,
@@ -397,6 +438,83 @@ const salesQueries = {
     FROM sales
     WHERE created_at >= ? AND created_at <= ? AND is_credit = 0
   `),
+  update: db.transaction((saleId, updates) => {
+    // Get existing sale
+    const existingSale = salesQueries.getById.get(saleId);
+    if (!existingSale) {
+      throw new Error('Sale not found');
+    }
+    
+    // Calculate stock difference if quantity changed
+    const quantityDiff = updates.quantity !== undefined 
+      ? updates.quantity - existingSale.quantity 
+      : 0;
+    
+    // Update stock if quantity changed
+    if (quantityDiff !== 0) {
+      if (quantityDiff > 0) {
+        // Quantity increased - check stock availability
+        const product = productQueries.getById.get(existingSale.product_id);
+        const isManuallyAdded = product.is_imported === 0;
+        if (!isManuallyAdded && product.stock_quantity < quantityDiff) {
+          throw new Error(`Insufficient stock. Available: ${product.stock_quantity}, Requested increase: ${quantityDiff}`);
+        }
+        productQueries.updateStock.run(quantityDiff, existingSale.product_id);
+      } else {
+        // Quantity decreased - restore stock
+        productQueries.restoreStock.run(-quantityDiff, existingSale.product_id);
+      }
+    }
+    
+    // Calculate new profit if price or quantity changed
+    let profit = existingSale.profit;
+    if (updates.sale_price !== undefined || updates.quantity !== undefined) {
+      const salePrice = updates.sale_price !== undefined ? parseFloat(updates.sale_price) : existingSale.sale_price;
+      const quantity = updates.quantity !== undefined ? parseInt(updates.quantity) : existingSale.quantity;
+      const purchasePrice = parseFloat(existingSale.purchase_price);
+      
+      if (existingSale.is_credit) {
+        profit = 0; // Credit sales have 0 profit until payment
+      } else {
+        profit = (salePrice - purchasePrice) * quantity;
+      }
+    }
+    
+    // Build update query dynamically
+    const updateFields = [];
+    const updateValues = [];
+    
+    if (updates.quantity !== undefined) {
+      updateFields.push('quantity = ?');
+      updateValues.push(parseInt(updates.quantity));
+    }
+    if (updates.sale_price !== undefined) {
+      updateFields.push('sale_price = ?');
+      updateValues.push(parseFloat(updates.sale_price));
+    }
+    if (updates.customer_id !== undefined) {
+      updateFields.push('customer_id = ?');
+      updateValues.push(updates.customer_id ? parseInt(updates.customer_id) : null);
+    }
+    if (updates.is_credit !== undefined) {
+      updateFields.push('is_credit = ?');
+      updateValues.push(updates.is_credit ? 1 : 0);
+    }
+    
+    // Always update profit
+    updateFields.push('profit = ?');
+    updateValues.push(profit);
+    
+    if (updateFields.length === 0) {
+      return existingSale; // No changes
+    }
+    
+    updateValues.push(saleId);
+    const updateQuery = `UPDATE sales SET ${updateFields.join(', ')} WHERE id = ?`;
+    db.prepare(updateQuery).run(...updateValues);
+    
+    return salesQueries.getById.get(saleId);
+  }),
   delete: db.transaction((saleId) => {
     // Get sale details before deleting
     const sale = salesQueries.getById.get(saleId);
@@ -470,6 +588,11 @@ const paymentQueries = {
     ORDER BY payment_date DESC, created_at DESC
   `),
   getById: db.prepare('SELECT * FROM customer_payments WHERE id = ?'),
+  update: db.prepare(`
+    UPDATE customer_payments 
+    SET customer_id = ?, amount = ?, payment_date = ?, notes = ?
+    WHERE id = ?
+  `),
   delete: db.prepare('DELETE FROM customer_payments WHERE id = ?'),
   getLatest: db.prepare(`
     SELECT cp.*, c.name as customer_name, c.phone as customer_phone
@@ -781,7 +904,30 @@ module.exports = {
   // Product operations
   getAllProducts: () => productQueries.getAll.all(),
   getProductById: (id) => productQueries.getById.get(id),
-  searchProducts: (query) => productQueries.search.all(`%${query}%`),
+  searchProducts: (query) => {
+    if (!query || query.trim() === '') return [];
+    
+    // Split query into words and trim each
+    const words = query.trim().split(/\s+/).filter(word => word.length > 0);
+    
+    let products;
+    // If single word, use simple LIKE search
+    if (words.length === 1) {
+      products = productQueries.search.all(`%${words[0]}%`);
+    } else {
+      // If multiple words, use multi-word search (all words must match)
+      products = productQueries.searchMultiWord(words);
+    }
+    
+    // Add highest sale price to each product
+    return products.map(product => {
+      const highestSale = productQueries.getHighestSalePrice.get(product.id);
+      return {
+        ...product,
+        latest_sale_price: highestSale && highestSale.sale_price ? highestSale.sale_price : null
+      };
+    });
+  },
   getLowStockProducts: (threshold = 5) => productQueries.getLowStock.all(threshold),
   createProduct: (product) => {
     const isImported = product.is_imported !== undefined ? (product.is_imported ? 1 : 0) : 0; // Default to manually added if not specified
@@ -803,6 +949,7 @@ module.exports = {
   getLatestSalesByDateRange: (startDate, limit = 10) => salesQueries.getLatestByDateRange.all(startDate, limit),
   getLatestSalesByCustomer: (customerId, limit = 10) => salesQueries.getLatestByCustomer.all(customerId, limit),
   getLatestSalesByDateRangeAndCustomer: (customerId, startDate, limit = 10) => salesQueries.getLatestByDateRangeAndCustomer.all(customerId, startDate, limit),
+  getSalesByTransactionIds: (transactionIds) => salesQueries.getByTransactionIds(transactionIds),
   getSalesStats: (period) => {
     let stats;
     let paymentProfit = 0;
@@ -851,12 +998,26 @@ module.exports = {
   },
   getTopProducts: () => salesQueries.getTopProducts.all(),
   getSaleById: (id) => salesQueries.getById.get(id),
+  updateSale: (id, updates) => salesQueries.update(id, updates),
   deleteSale: (id) => salesQueries.delete(id),
   createMultipleSales: (sales) => {
     return db.transaction(() => {
+      // Use provided transaction_id if available, otherwise generate a new one
+      // Format: timestamp_customerId_random (or just timestamp if no customer)
+      let transactionId = sales[0]?.transaction_id || null;
+      
+      if (!transactionId) {
+        const timestamp = Date.now();
+        const customerId = sales[0]?.customer_id || 'cash';
+        const random = Math.random().toString(36).substring(2, 9);
+        transactionId = `${timestamp}_${customerId}_${random}`;
+      }
+      
       const results = [];
       for (const sale of sales) {
-        const result = salesQueries.create(sale);
+        // Assign the same transaction_id to all sales in this batch
+        const saleWithTransaction = { ...sale, transaction_id: transactionId };
+        const result = salesQueries.create(saleWithTransaction);
         results.push(result);
       }
       return results;
@@ -1185,6 +1346,20 @@ module.exports = {
   },
   getCustomerPayments: (customerId) => paymentQueries.getByCustomerId.all(customerId),
   getPaymentById: (id) => paymentQueries.getById.get(id),
+  updatePayment: (id, payment) => {
+    const existing = paymentQueries.getById.get(id);
+    if (!existing) {
+      throw new Error('Payment not found');
+    }
+    paymentQueries.update.run(
+      payment.customer_id ? parseInt(payment.customer_id) : null,
+      parseFloat(payment.amount),
+      payment.payment_date,
+      payment.notes || null,
+      id
+    );
+    return paymentQueries.getById.get(id);
+  },
   deletePayment: (id) => {
     const payment = paymentQueries.getById.get(id);
     if (!payment) {

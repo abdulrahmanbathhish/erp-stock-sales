@@ -1,0 +1,34 @@
+============================================
+  ERP STOCK & SALES MANAGEMENT SYSTEM
+  Simple Start Instructions
+============================================
+
+TO START THE APP:
+-----------------
+1. Double-click: START_APP.bat
+2. Wait for the server to start
+3. Open your browser and go to: http://localhost:3000
+
+TO RESTART THE APP:
+-------------------
+1. Double-click: RESTART_APP.bat
+2. It will automatically:
+   - Stop any running server
+   - Start the server again
+3. Open your browser and go to: http://localhost:3000
+
+IMPORTANT NOTES:
+----------------
+- Make sure Node.js is installed (if not, run SETUP.bat first)
+- The server runs on port 3000
+- To stop the server, press Ctrl+C in the command window
+- If port 3000 is already in use, use RESTART_APP.bat to stop it first
+
+TROUBLESHOOTING:
+----------------
+- If you get "Node.js not found": Install Node.js from https://nodejs.org/
+- If you get "Dependencies not installed": Run SETUP.bat first
+- If port 3000 is busy: Use RESTART_APP.bat to stop and restart
+
+============================================
+

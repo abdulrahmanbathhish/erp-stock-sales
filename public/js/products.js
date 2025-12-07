@@ -1,5 +1,6 @@
 let allProducts = [];
 let searchTimeout = null;
+let searchTimeouts = {};
 
 // Format currency
 function formatCurrency(amount) {
@@ -69,7 +70,206 @@ function displayProducts(products) {
   }).join('');
 }
 
-// Search products
+// Highlight text in search results
+function highlightText(text, query) {
+  if (!query || query.trim() === '') return text;
+  const queryLower = query.toLowerCase();
+  const textLower = text.toLowerCase();
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.replace(regex, '<mark>$1</mark>');
+}
+
+// Search product with dropdown (for product-search input)
+async function searchProduct(event, rowId) {
+  const input = event.target;
+  const query = input.value.trim();
+  const resultsDiv = document.getElementById(`search-results-${rowId}`);
+  
+  if (!resultsDiv) return;
+  
+  clearTimeout(searchTimeouts[rowId]);
+  
+  if (query.length < 2) {
+    resultsDiv.classList.remove('show');
+    resultsDiv.style.display = 'none';
+    resultsDiv.innerHTML = '';
+    // Also filter the product list
+    searchProducts(query);
+    return;
+  }
+
+  // Show loading state
+  resultsDiv.innerHTML = `
+    <div class="list-group-item text-center text-muted">
+      <small data-en="Searching..." data-ar="جاري البحث...">جاري البحث...</small>
+    </div>
+  `;
+  resultsDiv.classList.add('show');
+  resultsDiv.style.display = 'block';
+  
+  searchTimeouts[rowId] = setTimeout(async () => {
+    try {
+      const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`);
+      if (!response.ok) throw new Error('Search failed');
+      
+      const products = await response.json();
+
+      if (products.length === 0) {
+        resultsDiv.innerHTML = `
+          <div class="list-group-item text-muted text-center" data-en="No products found" data-ar="لم يتم العثور على منتجات">لم يتم العثور على منتجات</div>
+        `;
+        resultsDiv.classList.add('show');
+        resultsDiv.style.display = 'block';
+        return;
+      }
+
+      // Sort products: exact matches first, then starts with, then contains
+      const queryLower = query.toLowerCase();
+      const sortedProducts = products.sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        
+        const aExact = aName === queryLower ? 0 : (aName.startsWith(queryLower) ? 1 : 2);
+        const bExact = bName === queryLower ? 0 : (bName.startsWith(queryLower) ? 1 : 2);
+        
+        if (aExact !== bExact) return aExact - bExact;
+        return aName.localeCompare(bName);
+      });
+
+      resultsDiv.innerHTML = sortedProducts.map((product, index) => {
+        const highlightedName = highlightText(product.name, query);
+        const stockClass = product.stock_quantity <= 0 ? 'text-danger' : (product.stock_quantity <= 5 ? 'text-warning' : 'text-success');
+        const currentPrice = product.sale_price ? formatCurrency(product.sale_price) : formatCurrency(product.purchase_price || 0);
+        return `
+          <button type="button" 
+                  class="list-group-item list-group-item-action search-result-item" 
+                  onclick="handleSelectProductFromSearch('product-search-main', ${product.id}, '${product.name.replace(/'/g, "\\'")}')"
+                  data-row-id="${rowId}"
+                  data-product-id="${product.id}"
+                  tabindex="0">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <strong class="search-result-item__name">${highlightedName}</strong>
+                <div class="search-result-item__details">
+                  <span class="${stockClass}">
+                    <span data-en="Stock:" data-ar="المخزون:">المخزون:</span> ${product.stock_quantity}
+                  </span>
+                  <span class="text-muted">|</span>
+                  <span class="text-muted">
+                    <span data-en="Price:" data-ar="السعر:">السعر:</span> ${currentPrice}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </button>
+        `;
+      }).join('');
+      
+      resultsDiv.classList.add('show');
+      resultsDiv.style.display = 'block';
+      
+      // Store current query for keyboard navigation
+      resultsDiv.dataset.currentQuery = query;
+    } catch (error) {
+      console.error('Error searching products:', error);
+      resultsDiv.innerHTML = `
+        <div class="list-group-item text-danger text-center">
+          <small data-en="Error searching products. Please try again." data-ar="خطأ في البحث. يرجى المحاولة مرة أخرى.">خطأ في البحث. يرجى المحاولة مرة أخرى.</small>
+        </div>
+      `;
+      resultsDiv.classList.add('show');
+      resultsDiv.style.display = 'block';
+    }
+  }, 250);
+}
+
+// Show search results on focus
+function showSearchResults(rowId) {
+  const input = document.querySelector(`input.product-search[data-row-id="${rowId}"]`);
+  if (input && input.value.trim().length >= 2) {
+    searchProduct({ target: input }, rowId);
+  }
+}
+
+// Handle keyboard navigation in search results
+function handleSearchKeyboard(event, rowId) {
+  const resultsDiv = document.getElementById(`search-results-${rowId}`);
+  if (!resultsDiv || !resultsDiv.classList.contains('show')) return;
+  
+  const items = resultsDiv.querySelectorAll('.search-result-item, .list-group-item-action');
+  if (items.length === 0) return;
+  
+  const currentIndex = Array.from(items).findIndex(item => item === document.activeElement || item.classList.contains('active'));
+  let newIndex = currentIndex;
+  
+  switch(event.key) {
+    case 'ArrowDown':
+      event.preventDefault();
+      newIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+      items[newIndex].focus();
+      items[newIndex].classList.add('active');
+      if (currentIndex >= 0) items[currentIndex].classList.remove('active');
+      break;
+    case 'ArrowUp':
+      event.preventDefault();
+      newIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+      items[newIndex].focus();
+      items[newIndex].classList.add('active');
+      if (currentIndex >= 0) items[currentIndex].classList.remove('active');
+      break;
+    case 'Enter':
+      event.preventDefault();
+      if (currentIndex >= 0 && items[currentIndex]) {
+        items[currentIndex].click();
+      }
+      break;
+    case 'Escape':
+      event.preventDefault();
+      resultsDiv.classList.remove('show');
+      resultsDiv.style.display = 'none';
+      const input = document.querySelector(`input.product-search[data-row-id="${rowId}"]`);
+      if (input) input.blur();
+      break;
+  }
+}
+
+// Handle product selection from search dropdown
+function handleSelectProductFromSearch(rowId, productId, productName) {
+  // Close the dropdown
+  const resultsDiv = document.getElementById(`search-results-${rowId}`);
+  if (resultsDiv) {
+    resultsDiv.classList.remove('show');
+    resultsDiv.style.display = 'none';
+  }
+  
+  // Set the input value
+  const input = document.querySelector(`input.product-search[data-row-id="${rowId}"]`);
+  if (input) {
+    input.value = productName;
+  }
+  
+  // Filter the product list to show only this product
+  searchProducts(productName);
+  
+  // Scroll to the product card if it exists
+  setTimeout(() => {
+    const productCards = document.querySelectorAll('.product-card');
+    productCards.forEach(card => {
+      const cardName = card.querySelector('.product-card__name')?.textContent;
+      if (cardName === productName) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Highlight the card briefly
+        card.style.transition = 'background-color 0.3s';
+        card.style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
+        setTimeout(() => {
+          card.style.backgroundColor = '';
+        }, 2000);
+      }
+    });
+  }, 100);
+}
+
+// Search products (filter list)
 function searchProducts(query) {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
@@ -210,13 +410,68 @@ async function deleteProduct(productId, productName) {
   }
 }
 
+// Initialize Socket.io for real-time updates
+let socket = null;
+
+function initSocket() {
+  // Connect to Socket.io server
+  socket = io();
+  
+  // Listen for product created
+  socket.on('product:created', (data) => {
+    console.log('New product created:', data);
+    loadProducts();
+  });
+  
+  // Listen for product updated
+  socket.on('product:updated', (data) => {
+    console.log('Product updated:', data);
+    loadProducts();
+  });
+  
+  // Listen for product deleted
+  socket.on('product:deleted', (data) => {
+    console.log('Product deleted:', data);
+    loadProducts();
+  });
+  
+  // Handle connection events
+  socket.on('connect', () => {
+    console.log('✅ Connected to real-time server');
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('❌ Disconnected from real-time server');
+  });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   loadProducts();
   
-  // Search input handler
+  // Initialize socket connection
+  initSocket();
+  
+  // Search input handler (for filtering the list)
   document.getElementById('product-search').addEventListener('input', (e) => {
-    searchProducts(e.target.value);
+    // Only filter if dropdown is not showing or if user is typing
+    const resultsDiv = document.getElementById('search-results-product-search-main');
+    if (!resultsDiv || !resultsDiv.classList.contains('show')) {
+      searchProducts(e.target.value);
+    }
+  });
+  
+  // Hide search results when clicking outside
+  document.addEventListener('click', (e) => {
+    const productResults = document.getElementById('search-results-product-search-main');
+    const searchInput = document.getElementById('product-search');
+    
+    if (!e.target.closest('#product-search') && !e.target.closest('#search-results-product-search-main')) {
+      if (productResults) {
+        productResults.classList.remove('show');
+        productResults.style.display = 'none';
+      }
+    }
   });
 });
 

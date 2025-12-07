@@ -13,6 +13,7 @@ const adminRouter = require('./routes/admin');
 const customersRouter = require('./routes/customers');
 const returnsRouter = require('./routes/returns');
 const exportRouter = require('./routes/export');
+const { requireAuth, handleLogin, handleLogout } = require('./middleware/auth');
 
 const app = express();
 const server = http.createServer(app);
@@ -70,6 +71,13 @@ function getLocalIPs() {
   return preferred.length > 0 ? preferred : addresses;
 }
 
+// Auth routes (must be BEFORE requireAuth middleware)
+app.post('/api/auth/login', handleLogin);
+app.post('/api/auth/logout', handleLogout);
+
+// Authentication middleware - protect all routes (after auth routes)
+app.use(requireAuth);
+
 // Root route - MUST be before static middleware to prevent index.html from being served
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'home.html'));
@@ -97,6 +105,7 @@ app.use('/api/returns', returnsRouter);
 app.use('/api/export', exportRouter);
 
 // Serve static files from public directory (after routes to avoid index.html auto-serving)
+// Note: Static files are allowed through requireAuth middleware
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // Socket.io connection handling
@@ -108,7 +117,24 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start server
+// Error handling for uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('\n❌ UNCAUGHT EXCEPTION:');
+  console.error(error);
+  console.error('\nStack trace:');
+  console.error(error.stack);
+  console.error('\nServer will continue running, but this error should be fixed.\n');
+});
+
+// Error handling for unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('\n❌ UNHANDLED REJECTION at:', promise);
+  console.error('Reason:', reason);
+  console.error('\nServer will continue running, but this error should be fixed.\n');
+});
+
+// Start server with error handling
+try {
 server.listen(PORT, HOST, () => {
   const localIPs = getLocalIPs();
   const isWindows = os.platform() === 'win32';
@@ -150,4 +176,25 @@ server.listen(PORT, HOST, () => {
   console.log('='.repeat(60));
   console.log(`\n✅ Server ready! Press Ctrl+C to stop.\n`);
 });
+
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`\n❌ ERROR: Port ${PORT} is already in use!`);
+      console.error(`   Another application is using port ${PORT}.`);
+      console.error(`   Please close that application or use RESTART_APP.bat to stop it.\n`);
+    } else {
+      console.error('\n❌ SERVER ERROR:');
+      console.error(error);
+      console.error('\nStack trace:');
+      console.error(error.stack);
+    }
+    process.exit(1);
+  });
+} catch (error) {
+  console.error('\n❌ FAILED TO START SERVER:');
+  console.error(error);
+  console.error('\nStack trace:');
+  console.error(error.stack);
+  process.exit(1);
+}
 

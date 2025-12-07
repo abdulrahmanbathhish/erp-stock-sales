@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 
+// Helper to get io instance
+function getIO(req) {
+  return req.app.get('io');
+}
+
 // Get all expenses
 router.get('/', (req, res) => {
   try {
@@ -68,6 +73,12 @@ router.post('/multiple', (req, res) => {
 
     const totalAmount = results.reduce((sum, r) => sum + r.amount, 0);
 
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('expenses:multiple-created', { expenses: results });
+    }
+
     res.json({
       success: true,
       expenses_created: results.length,
@@ -99,6 +110,12 @@ router.post('/', (req, res) => {
       expense_date: expense_date
     });
 
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('expense:created', { expense });
+    }
+
     res.json({
       success: true,
       expense: expense
@@ -129,6 +146,12 @@ router.put('/:id', (req, res) => {
       expense_date: expense_date
     });
 
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('expense:updated', { expense });
+    }
+
     res.json({
       success: true,
       expense: expense
@@ -151,6 +174,12 @@ router.delete('/:id', (req, res) => {
       entity_name: expense.description || 'Expense',
       details: `Expense deleted: $${expense.amount} - ${expense.description || 'No description'}`
     });
+
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('expense:deleted', { expense_id: id });
+    }
 
     res.json({
       success: true,

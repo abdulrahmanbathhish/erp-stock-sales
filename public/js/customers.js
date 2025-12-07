@@ -203,9 +203,47 @@ async function saveCustomer() {
   }
 }
 
+// Initialize Socket.io for real-time updates
+let socket = null;
+
+function initSocket() {
+  // Connect to Socket.io server
+  socket = io();
+  
+  // Listen for customer created
+  socket.on('customer:created', (data) => {
+    console.log('New customer created:', data);
+    loadCustomers();
+  });
+  
+  // Listen for payment created
+  socket.on('payment:created', (data) => {
+    console.log('Payment created:', data);
+    loadCustomers();
+  });
+  
+  // Listen for payment deleted
+  socket.on('payment:deleted', (data) => {
+    console.log('Payment deleted:', data);
+    loadCustomers();
+  });
+  
+  // Handle connection events
+  socket.on('connect', () => {
+    console.log('✅ Connected to real-time server');
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('❌ Disconnected from real-time server');
+  });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   loadCustomers();
+  
+  // Initialize socket connection
+  initSocket();
   
   // Check for action parameters
   const urlParams = new URLSearchParams(window.location.search);

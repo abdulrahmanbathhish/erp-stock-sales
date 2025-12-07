@@ -19,7 +19,7 @@
     "node": "20.x"
   },
   "dependencies": {
-    "better-sqlite3": "^9.2.2",
+    "better-sqlite3": "^12.5.0",
     "cors": "^2.8.5",
     "deasync": "^0.1.31",
     "exceljs": "^4.4.0",

@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 
+// Helper to get io instance
+function getIO(req) {
+  return req.app.get('io');
+}
+
 // Get all customers (with optional search)
 router.get('/', (req, res) => {
   try {
@@ -72,6 +77,12 @@ router.post('/quick-create', (req, res) => {
       notes: null
     });
 
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('customer:created', { customer });
+    }
+
     res.json({
       success: true,
       customer: customer
@@ -96,6 +107,12 @@ router.post('/', (req, res) => {
       phone: phone ? phone.trim() : null,
       notes: notes ? notes.trim() : null
     });
+
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('customer:created', { customer });
+    }
 
     res.json({
       success: true,
@@ -134,9 +151,46 @@ router.post('/:id/payments', (req, res) => {
       notes: notes ? notes.trim() : null
     });
 
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('payment:created', { payment, customer_id: customerId });
+    }
+
     res.json({
       success: true,
       payment: payment
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Delete a payment
+// Update a payment
+router.put('/payments/:id', (req, res) => {
+  try {
+    const paymentId = parseInt(req.params.id);
+    const { customer_id, amount, payment_date, notes } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Amount is required and must be greater than 0' });
+    }
+
+    if (!payment_date) {
+      return res.status(400).json({ error: 'Payment date is required' });
+    }
+
+    const updatedPayment = db.updatePayment(paymentId, {
+      customer_id: customer_id ? parseInt(customer_id) : null,
+      amount: parseFloat(amount),
+      payment_date: payment_date,
+      notes: notes || null
+    });
+
+    res.json({
+      success: true,
+      payment: updatedPayment
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -148,6 +202,12 @@ router.delete('/payments/:id', (req, res) => {
   try {
     const paymentId = parseInt(req.params.id);
     const payment = db.deletePayment(paymentId);
+    
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('payment:deleted', { payment_id: paymentId, customer_id: payment.customer_id });
+    }
     
     res.json({
       success: true,

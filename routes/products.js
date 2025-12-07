@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 
+// Helper to get io instance
+function getIO(req) {
+  return req.app.get('io');
+}
+
 // Get all products
 router.get('/', (req, res) => {
   try {
@@ -40,6 +45,12 @@ router.post('/quick-create', (req, res) => {
       stock_quantity: 0,
       is_imported: false
     });
+
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('product:created', { product });
+    }
 
     res.json({
       success: true,
@@ -99,6 +110,12 @@ router.put('/:id', (req, res) => {
       stock_quantity: parseInt(stock_quantity)
     });
 
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('product:updated', { product });
+    }
+
     res.json({
       success: true,
       product: product
@@ -121,6 +138,12 @@ router.delete('/:id', (req, res) => {
       entity_name: product.name,
       details: `Product deleted: ${product.name} (Stock: ${product.stock_quantity})`
     });
+
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('product:deleted', { product_id: productId });
+    }
 
     res.json({
       success: true,

@@ -442,8 +442,55 @@ async function deleteExpense(expenseId) {
   }
 }
 
+// Initialize Socket.io for real-time updates
+let socket = null;
+
+function initSocket() {
+  // Connect to Socket.io server
+  socket = io();
+  
+  // Listen for expense created
+  socket.on('expense:created', (data) => {
+    console.log('New expense created:', data);
+    loadExpenses();
+    loadCategories();
+  });
+  
+  // Listen for multiple expenses created
+  socket.on('expenses:multiple-created', (data) => {
+    console.log('Multiple expenses created:', data);
+    loadExpenses();
+    loadCategories();
+  });
+  
+  // Listen for expense updated
+  socket.on('expense:updated', (data) => {
+    console.log('Expense updated:', data);
+    loadExpenses();
+  });
+  
+  // Listen for expense deleted
+  socket.on('expense:deleted', (data) => {
+    console.log('Expense deleted:', data);
+    loadExpenses();
+    loadCategories();
+  });
+  
+  // Handle connection events
+  socket.on('connect', () => {
+    console.log('✅ Connected to real-time server');
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('❌ Disconnected from real-time server');
+  });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize socket connection
+  initSocket();
+  
   // Initialize expenses table if on add tab
   const addTab = document.getElementById('add-tab');
   if (addTab && addTab.classList.contains('active')) {

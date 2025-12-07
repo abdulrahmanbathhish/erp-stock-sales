@@ -39,7 +39,9 @@ function addNewRow() {
                  placeholder="ابحث عن منتج..."
                  data-row-id="${rowId}"
                  onkeyup="searchProduct(event, '${rowId}')"
-                 onfocus="showSearchResults('${rowId}')">
+                 onkeydown="handleSearchKeyboard(event, '${rowId}')"
+                 onfocus="showSearchResults('${rowId}')"
+                 autocomplete="off">
           <div class="search-results list-group" id="search-results-${rowId}"></div>
           <input type="hidden" class="product-id" data-row-id="${rowId}">
           <input type="hidden" class="purchase-price" data-row-id="${rowId}">
@@ -88,6 +90,15 @@ function removeRow(rowId) {
   }
 }
 
+// Highlight search query in text
+function highlightText(text, query) {
+  if (!query || query.trim() === '') return text;
+  const queryLower = query.toLowerCase();
+  const textLower = text.toLowerCase();
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.replace(regex, '<mark>$1</mark>');
+}
+
 // Search product
 async function searchProduct(event, rowId) {
   const input = event.target;
@@ -101,23 +112,36 @@ async function searchProduct(event, rowId) {
   if (query.length < 2) {
     resultsDiv.classList.remove('show');
     resultsDiv.style.display = 'none';
+    resultsDiv.innerHTML = '';
     return;
   }
+
+  // Show loading state
+  resultsDiv.innerHTML = `
+    <div class="list-group-item text-center text-muted">
+      <small data-en="Searching..." data-ar="جاري البحث...">جاري البحث...</small>
+    </div>
+  `;
+  resultsDiv.classList.add('show');
+  resultsDiv.style.display = 'block';
 
   searchTimeouts[rowId] = setTimeout(async () => {
     try {
       const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`);
+      if (!response.ok) throw new Error('Search failed');
+      
       const products = await response.json();
 
       if (products.length === 0) {
         resultsDiv.innerHTML = `
-          <div class="list-group-item text-muted" data-en="No products found" data-ar="لم يتم العثور على منتجات">لم يتم العثور على منتجات</div>
+          <div class="list-group-item text-muted text-center" data-en="No products found" data-ar="لم يتم العثور على منتجات">لم يتم العثور على منتجات</div>
           <button type="button" 
                   class="list-group-item list-group-item-action list-group-item-primary" 
-                  onclick="createAndSelectProduct('${rowId}', '${query.replace(/'/g, "\\'")}')">
+                  onclick="createAndSelectProduct('${rowId}', '${query.replace(/'/g, "\\'")}')"
+                  data-row-id="${rowId}">
             <strong data-en="Add new product with this name" data-ar="إضافة منتج جديد بهذا الاسم">إضافة منتج جديد بهذا الاسم</strong>
             <br>
-            <small data-en="Name:" data-ar="الاسم:">الاسم:</small> ${query}
+            <small data-en="Name:" data-ar="الاسم:">الاسم:</small> ${highlightText(query, query)}
           </button>
         `;
         resultsDiv.classList.add('show');
@@ -125,25 +149,66 @@ async function searchProduct(event, rowId) {
         return;
       }
 
-      resultsDiv.innerHTML = products.map(product => `
+      // Sort products: exact matches first, then starts with, then contains
+      const queryLower = query.toLowerCase();
+      const sortedProducts = products.sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        
+        const aExact = aName === queryLower ? 0 : (aName.startsWith(queryLower) ? 1 : 2);
+        const bExact = bName === queryLower ? 0 : (bName.startsWith(queryLower) ? 1 : 2);
+        
+        if (aExact !== bExact) return aExact - bExact;
+        return aName.localeCompare(bName);
+      });
+
+      resultsDiv.innerHTML = sortedProducts.map((product, index) => {
+        const highlightedName = highlightText(product.name, query);
+        const stockClass = product.stock_quantity <= 0 ? 'text-danger' : (product.stock_quantity <= 5 ? 'text-warning' : 'text-success');
+        const currentPrice = product.sale_price ? formatCurrency(product.sale_price) : '<span data-en="Not set" data-ar="غير محدد">غير محدد</span>';
+        const latestSalePrice = product.latest_sale_price ? formatCurrency(product.latest_sale_price) : null;
+        return `
         <button type="button" 
-                class="list-group-item list-group-item-action" 
-                onclick="handleSelectProduct('${rowId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.purchase_price}, ${product.sale_price || 'null'}, ${product.stock_quantity})">
-          <strong>${product.name}</strong><br>
-          <small class="text-muted">
-            <span data-en="Stock:" data-ar="المخزون:">المخزون:</span> ${product.stock_quantity} | 
-            <span data-en="Price:" data-ar="السعر:">السعر:</span> ${product.sale_price ? formatCurrency(product.sale_price) : '<span data-en="Not set" data-ar="غير محدد">غير محدد</span>'}
-          </small>
+                  class="list-group-item list-group-item-action search-result-item" 
+                  onclick="handleSelectProduct('${rowId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.purchase_price}, ${product.sale_price || 'null'}, ${product.stock_quantity})"
+                  data-row-id="${rowId}"
+                  data-product-id="${product.id}"
+                  tabindex="0">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <strong class="search-result-item__name">${highlightedName}</strong>
+                <div class="search-result-item__details">
+                  <span class="${stockClass}">
+                    <span data-en="Stock:" data-ar="المخزون:">المخزون:</span> ${product.stock_quantity}
+                  </span>
+                  <span class="text-muted">|</span>
+                  <span class="text-muted">
+                    <span data-en="Price:" data-ar="السعر:">السعر:</span> ${currentPrice}
+                  </span>
+                  ${latestSalePrice ? `<span class="text-muted">|</span><span class="text-info"><span data-en="Highest Sale:" data-ar="أعلى سعر بيع:">أعلى سعر بيع:</span> ${latestSalePrice}</span>` : ''}
+                </div>
+              </div>
+            </div>
         </button>
-      `).join('');
+        `;
+      }).join('');
+      
       resultsDiv.classList.add('show');
       resultsDiv.style.display = 'block';
+      
+      // Store current query for keyboard navigation
+      resultsDiv.dataset.currentQuery = query;
     } catch (error) {
       console.error('Error searching products:', error);
-      resultsDiv.classList.remove('show');
-      resultsDiv.style.display = 'none';
+      resultsDiv.innerHTML = `
+        <div class="list-group-item text-danger text-center">
+          <small data-en="Error searching products. Please try again." data-ar="خطأ في البحث. يرجى المحاولة مرة أخرى.">خطأ في البحث. يرجى المحاولة مرة أخرى.</small>
+        </div>
+      `;
+      resultsDiv.classList.add('show');
+      resultsDiv.style.display = 'block';
     }
-  }, 300);
+  }, 250);
 }
 
 // Show search results on focus
@@ -151,6 +216,48 @@ function showSearchResults(rowId) {
   const input = document.querySelector(`input.product-search[data-row-id="${rowId}"]`);
   if (input && input.value.trim().length >= 2) {
     searchProduct({ target: input }, rowId);
+  }
+}
+
+// Handle keyboard navigation in search results
+function handleSearchKeyboard(event, rowId) {
+  const resultsDiv = document.getElementById(`search-results-${rowId}`);
+  if (!resultsDiv || !resultsDiv.classList.contains('show')) return;
+  
+  const items = resultsDiv.querySelectorAll('.search-result-item, .list-group-item-action');
+  if (items.length === 0) return;
+  
+  const currentIndex = Array.from(items).findIndex(item => item === document.activeElement || item.classList.contains('active'));
+  let newIndex = currentIndex;
+  
+  switch(event.key) {
+    case 'ArrowDown':
+      event.preventDefault();
+      newIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+      items[newIndex].focus();
+      items[newIndex].classList.add('active');
+      if (currentIndex >= 0) items[currentIndex].classList.remove('active');
+      break;
+    case 'ArrowUp':
+      event.preventDefault();
+      newIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+      items[newIndex].focus();
+      items[newIndex].classList.add('active');
+      if (currentIndex >= 0) items[currentIndex].classList.remove('active');
+      break;
+    case 'Enter':
+      event.preventDefault();
+      if (currentIndex >= 0 && items[currentIndex]) {
+        items[currentIndex].click();
+      }
+      break;
+    case 'Escape':
+      event.preventDefault();
+      resultsDiv.classList.remove('show');
+      resultsDiv.style.display = 'none';
+      const input = document.querySelector(`input.product-search[data-row-id="${rowId}"]`);
+      if (input) input.blur();
+      break;
   }
 }
 
@@ -519,12 +626,24 @@ document.addEventListener('click', (e) => {
     document.querySelectorAll('.search-results').forEach(div => {
       div.classList.remove('show');
       div.style.display = 'none';
+      div.querySelectorAll('.active').forEach(item => item.classList.remove('active'));
     });
   }
   const resultsDiv = document.getElementById('customer-search-results');
   if (!e.target.closest('#customer-search-input') && !e.target.closest('#customer-search-results')) {
     resultsDiv.classList.remove('show');
     resultsDiv.style.display = 'none';
+  }
+});
+
+// Close search results on Escape key globally
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.search-results.show').forEach(div => {
+      div.classList.remove('show');
+      div.style.display = 'none';
+      div.querySelectorAll('.active').forEach(item => item.classList.remove('active'));
+    });
   }
 });
 
