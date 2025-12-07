@@ -17,7 +17,17 @@ router.get('/search', (req, res) => {
   try {
     const query = req.query.q || '';
     const products = db.searchProducts(query);
-    res.json(products);
+    
+    // Add max historical sale price to each product
+    const productsWithMaxPrice = products.map(product => {
+      const maxPrice = db.getProductMaxSalePrice(product.id);
+      return {
+        ...product,
+        max_sale_price: maxPrice
+      };
+    });
+    
+    res.json(productsWithMaxPrice);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -57,7 +67,13 @@ router.get('/:id', (req, res) => {
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
-    res.json(product);
+    
+    // Add max historical sale price
+    const maxPrice = db.getProductMaxSalePrice(product.id);
+    res.json({
+      ...product,
+      max_sale_price: maxPrice
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

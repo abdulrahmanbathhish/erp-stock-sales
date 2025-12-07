@@ -169,7 +169,29 @@ try {
 const productQueries = {
   getAll: db.prepare('SELECT * FROM products ORDER BY name'),
   getById: db.prepare('SELECT * FROM products WHERE id = ?'),
-  search: db.prepare('SELECT * FROM products WHERE name LIKE ? ORDER BY name LIMIT 20'),
+  // Flexible search - matches all words in query (order-independent, case-insensitive)
+  search: (query) => {
+    // Split query into words and build SQL with multiple LIKE conditions
+    const words = query.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    if (words.length === 0) {
+      return [];
+    }
+    
+    // Build WHERE clause: each word must appear in the product name
+    const conditions = words.map(() => "LOWER(name) LIKE ?").join(' AND ');
+    const sql = `SELECT * FROM products WHERE ${conditions} ORDER BY name LIMIT 20`;
+    const stmt = db.prepare(sql);
+    
+    // Each word gets wrapped with % for partial matching
+    const params = words.map(word => `%${word}%`);
+    return stmt.all(...params);
+  },
+  // Get highest historical sale price for a product
+  getMaxSalePrice: db.prepare(`
+    SELECT MAX(sale_price) as max_price
+    FROM sales
+    WHERE product_id = ?
+  `),
   getLowStock: db.prepare('SELECT * FROM products WHERE stock_quantity < ? ORDER BY stock_quantity, name'),
   create: db.prepare(`
     INSERT INTO products (name, purchase_price, sale_price, stock_quantity, is_imported)
@@ -781,7 +803,17 @@ module.exports = {
   // Product operations
   getAllProducts: () => productQueries.getAll.all(),
   getProductById: (id) => productQueries.getById.get(id),
-  searchProducts: (query) => productQueries.search.all(`%${query}%`),
+  searchProducts: (query) => {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+    return productQueries.search(query.trim());
+  },
+  // Get highest historical sale price for a product
+  getProductMaxSalePrice: (productId) => {
+    const result = productQueries.getMaxSalePrice.get(productId);
+    return result && result.max_price ? parseFloat(result.max_price) : null;
+  },
   getLowStockProducts: (threshold = 5) => productQueries.getLowStock.all(threshold),
   createProduct: (product) => {
     const isImported = product.is_imported !== undefined ? (product.is_imported ? 1 : 0) : 0; // Default to manually added if not specified

@@ -132,7 +132,7 @@ async function searchProduct(event, rowId) {
           <strong>${product.name}</strong><br>
           <small class="text-muted">
             <span data-en="Stock:" data-ar="المخزون:">المخزون:</span> ${product.stock_quantity} | 
-            <span data-en="Price:" data-ar="السعر:">السعر:</span> ${product.sale_price ? formatCurrency(product.sale_price) : '<span data-en="Not set" data-ar="غير محدد">غير محدد</span>'}
+            <span data-en="Price:" data-ar="السعر:">السعر:</span> ${product.sale_price ? formatCurrency(product.sale_price) : (product.max_sale_price ? formatCurrency(product.max_sale_price) : '<span data-en="Not set" data-ar="غير محدد">غير محدد</span>')}
           </small>
         </button>
       `).join('');
